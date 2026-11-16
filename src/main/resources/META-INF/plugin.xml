@@ -1,0 +1,24 @@
+<idea-plugin>
+    <id>soulx.CodeReadingMarkNoteLite</id>
+    <name>Code Reading Mark Note Lite</name>
+    <vendor email="support@soulx.com" url="http://www.soulx.com">SoulX</vendor>
+    <description><![CDATA[
+      Flat code reading notes plugin for IntelliJ.
+      Supports inline notes, left gutter markers, and end-of-line short previews.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="com.soulx.marknote.service.NoteService"/>
+        <toolWindow id="Code Notes" anchor="bottom" factoryClass="com.soulx.marknote.ui.NotesToolWindowFactory"/>
+        <editorFactoryListener implementation="com.soulx.marknote.listener.EditorOpenListener"/>
+    </extensions>
+
+    <actions>
+        <action id="CodeReadingMarkNoteLite.AddNote" class="com.soulx.marknote.action.AddNoteAction"
+                text="Add Code Note" description="Add a note to the current line">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
