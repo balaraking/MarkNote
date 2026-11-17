@@ -6,8 +6,8 @@ plugins {
     id("org.jetbrains.intellij.platform") version "2.20.1"
 }
 
-group = "com.soulx"
-version = "1.0-SNAPSHOT"
+group = "com.balaraking"
+version = "1.0.0"
 
 repositories {
     mavenCentral()

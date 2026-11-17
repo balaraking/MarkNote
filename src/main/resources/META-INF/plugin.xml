@@ -1,39 +1,43 @@
 <idea-plugin>
-    <id>soulx.MarkNote</id>
+    <id>balaraking.MarkNote</id>
     <name>MarkNote</name>
-    <vendor email="support@soulx.com" url="http://www.soulx.com">SoulX</vendor>
+    <vendor email="balaraking@gmail.com">balaraking</vendor>
     <description><![CDATA[
       Flat code reading notes plugin for IntelliJ.
       Supports inline notes, left gutter markers, end-of-line short previews, and anchor-based tracking.
     ]]></description>
 
+    <change-notes><![CDATA[
+      1.0.0 — Initial release: inline notes, gutter markers, short previews, anchor tracking.
+    ]]></change-notes>
+
     <depends>com.intellij.modules.platform</depends>
     <resource-bundle>messages.NoteBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceImplementation="com.soulx.marknote.service.NoteService"/>
-        <projectService serviceImplementation="com.soulx.marknote.service.NoteAnchorService"/>
-        <projectService serviceImplementation="com.soulx.marknote.service.NoteMarkerService"/>
-        <projectService serviceImplementation="com.soulx.marknote.tracker.NoteDocumentTracker"/>
-        <projectService serviceImplementation="com.soulx.marknote.ui.NoteEditorPresentation"/>
+        <projectService serviceImplementation="com.balaraking.marknote.service.NoteService"/>
+        <projectService serviceImplementation="com.balaraking.marknote.service.NoteAnchorService"/>
+        <projectService serviceImplementation="com.balaraking.marknote.service.NoteMarkerService"/>
+        <projectService serviceImplementation="com.balaraking.marknote.tracker.NoteDocumentTracker"/>
+        <projectService serviceImplementation="com.balaraking.marknote.ui.NoteEditorPresentation"/>
 
         <toolWindow id="Code Notes"
                     stripeTitle="toolwindow.stripe.Code_Notes"
                     anchor="bottom"
-                    factoryClass="com.soulx.marknote.ui.NotesToolWindowFactory"
-                    icon="AllIcons.General.Note"/>
-        <editorFactoryListener implementation="com.soulx.marknote.listener.EditorOpenListener"/>
+                    factoryClass="com.balaraking.marknote.ui.NotesToolWindowFactory"
+                    icon="/icons/markNote_gutter.svg"/>
+        <editorFactoryListener implementation="com.balaraking.marknote.listener.EditorOpenListener"/>
     </extensions>
 
     <actions>
         <action id="MarkNote.AddNote"
-                class="com.soulx.marknote.action.AddNoteAction"
+                class="com.balaraking.marknote.action.AddNoteAction"
                 text="action.MarkNote.AddNote.text"
                 description="action.MarkNote.AddNote.description">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
         <action id="MarkNote.RebindNote"
-                class="com.soulx.marknote.action.RebindNoteAction"
+                class="com.balaraking.marknote.action.RebindNoteAction"
                 text="action.MarkNote.RebindNote.text"
                 description="action.MarkNote.RebindNote.description">
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
