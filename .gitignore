@@ -1,3 +1,13 @@
+# IDE and OS files
 /.idea/
+.DS_Store
+
+# Build and tool caches
 /build/
+/.gradle/
+/.intellijPlatform/
+/.kotlin/
+/.superpowers/
+
+# Local task notes
 /doc/

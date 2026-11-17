@@ -7,7 +7,7 @@ import org.jetbrains.annotations.PropertyKey
 @NonNls
 private const val BUNDLE = "messages.NoteBundle"
 
-object NoteBundle : DynamicBundle(BUNDLE) {
+object NoteBundle : DynamicBundle(NoteBundle::class.java, BUNDLE) {
     @JvmStatic
     fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any): String {
         return getMessage(key, *params)
