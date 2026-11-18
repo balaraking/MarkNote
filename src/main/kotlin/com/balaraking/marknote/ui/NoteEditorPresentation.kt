@@ -125,14 +125,52 @@ class NoteEditorPresentation(private val project: Project) : NoteChangeListener,
 
     companion object {
         private const val SHORT_PREVIEW_LENGTH = 50
+        private const val TOOLTIP_PREVIEW_LENGTH = 200
         private const val ELLIPSIS = "..."
 
+        private val FENCED_CODE_BOUNDARY = Regex("(?m)^[ \\t]*```[^\\r\\n]*[ \\t]*$")
+        private val INLINE_CODE = Regex("`([^`\\r\\n]+)`")
+        private val IMAGE_OR_LINK = Regex("!?\\[([^]]+)]\\([^)]*\\)")
+        private val HEADING_PREFIX = Regex("(?m)^[ \\t]{0,3}#{1,6}[ \\t]+")
+        private val UNORDERED_LIST_PREFIX = Regex("(?m)^[ \\t]*[-+*][ \\t]+(?:\\[[ xX]\\][ \\t]+)?")
+        private val ORDERED_LIST_PREFIX = Regex("(?m)^[ \\t]*\\d+[.)][ \\t]+")
+        private val QUOTE_PREFIX = Regex("(?m)^[ \\t]*>+[ \\t]?")
+        private val BOLD_ITALIC = Regex("(\\*\\*\\*|___)(.+?)\\1")
+        private val BOLD = Regex("(\\*\\*|__)(.+?)\\1")
+        private val ITALIC_ASTERISK = Regex("(?<!\\*)\\*([^*\\r\\n]+)\\*(?!\\*)")
+        private val ITALIC_UNDERSCORE = Regex("(?<!_)_([^_\\r\\n]+)_(?!_)")
+        private val STRIKETHROUGH = Regex("~~([^~\\r\\n]+)~~")
+
         fun formatShortPreview(content: String): String {
-            return truncatePreview(singleLine(content), SHORT_PREVIEW_LENGTH)
+            return formatPreview(content, SHORT_PREVIEW_LENGTH)
+        }
+
+        fun formatTooltipPreview(content: String): String {
+            return formatPreview(content, TOOLTIP_PREVIEW_LENGTH)
+        }
+
+        private fun formatPreview(content: String, maxLength: Int): String {
+            return truncatePreview(singleLine(content), maxLength)
         }
 
         private fun singleLine(content: String): String {
-            return content.replace("\r\n", " ").replace("\n", " ").trim()
+            return content
+                .replace("\r\n", "\n")
+                .replace('\r', '\n')
+                .replace(FENCED_CODE_BOUNDARY, "")
+                .replace(INLINE_CODE, "$1")
+                .replace(IMAGE_OR_LINK, "$1")
+                .replace(HEADING_PREFIX, "")
+                .replace(UNORDERED_LIST_PREFIX, "")
+                .replace(ORDERED_LIST_PREFIX, "")
+                .replace(QUOTE_PREFIX, "")
+                .replace(BOLD_ITALIC, "$2")
+                .replace(BOLD, "$2")
+                .replace(ITALIC_ASTERISK, "$1")
+                .replace(ITALIC_UNDERSCORE, "$1")
+                .replace(STRIKETHROUGH, "$1")
+                .replace(Regex("\\s+"), " ")
+                .trim()
         }
 
         private fun truncatePreview(content: String, maxLength: Int): String {

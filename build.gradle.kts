@@ -24,6 +24,8 @@ dependencies {
         testFramework(TestFrameworkType.JUnit5)
     }
 
+    implementation("org.jetbrains:markdown:0.7.3")
+
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
     testImplementation("junit:junit:4.13.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")

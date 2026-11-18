@@ -16,7 +16,7 @@ class NoteGutterIconRenderer(
 
     override fun getTooltipText(): String? {
         val note = project.getService(NoteService::class.java)?.getNotes()?.find { it.id == noteId }
-        return note?.content
+        return note?.content?.let(NoteEditorPresentation::formatTooltipPreview)
     }
 
     override fun getClickAction(): AnAction {
