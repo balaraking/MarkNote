@@ -119,10 +119,82 @@ class NoteEditorIntegrationTest : BasePlatformTestCase() {
         presentation.refreshEditor(myFixture.editor)
 
         assertEquals(1, topNoteInlays().size)
-        assertEquals("First line\nSecond line", (topNoteInlays().single().renderer as TopNoteInlayRenderer).text)
+        assertEquals("First line Second line", (topNoteInlays().single().renderer as TopNoteInlayRenderer).text)
         assertEquals(textBefore, document.text)
         assertEquals(lineCountBefore, document.lineCount)
         assertEquals(stampBefore, document.modificationStamp)
+    }
+
+    fun testTopNoteUsesCircleExclamationMarkerIcon() {
+        val vf = configureProjectFile("TopNoteIcon.kt", "fun main() {\n    println(42)\n}\n")
+        val relPath = ProjectPathUtils.toProjectRelativePath(project, vf)!!
+        val document = myFixture.editor.document
+        val noteService = project.getService(NoteService::class.java)
+        val anchorService = project.getService(NoteAnchorService::class.java)
+        val markerService = project.getService(NoteMarkerService::class.java)
+        val presentation = project.getService(NoteEditorPresentation::class.java)
+        val note = Note(
+            relativePath = relPath,
+            line = 1,
+            content = "Top note",
+            anchor = anchorService.captureAnchor(DocumentTextProvider(document), 1),
+            placement = NotePlacement.TOP
+        )
+
+        noteService.saveNote(note)
+        markerService.createMarker(note.id, document, 1)
+        presentation.refreshEditor(myFixture.editor)
+
+        val renderer = topNoteInlays().single().renderer as TopNoteInlayRenderer
+        assertSame(NoteIcons.MARK_INLAY, renderer.markerIcon)
+    }
+
+    fun testTopNoteUsesTargetCodeIndentation() {
+        val vf = configureProjectFile("TopNoteIndent.kt", "fun main() {\n        println(42)\n}\n")
+        val relPath = ProjectPathUtils.toProjectRelativePath(project, vf)!!
+        val document = myFixture.editor.document
+        val noteService = project.getService(NoteService::class.java)
+        val anchorService = project.getService(NoteAnchorService::class.java)
+        val markerService = project.getService(NoteMarkerService::class.java)
+        val presentation = project.getService(NoteEditorPresentation::class.java)
+        val note = Note(
+            relativePath = relPath,
+            line = 1,
+            content = "Top note",
+            anchor = anchorService.captureAnchor(DocumentTextProvider(document), 1),
+            placement = NotePlacement.TOP
+        )
+
+        noteService.saveNote(note)
+        markerService.createMarker(note.id, document, 1)
+        presentation.refreshEditor(myFixture.editor)
+
+        val renderer = topNoteInlays().single().renderer as TopNoteInlayRenderer
+        assertEquals("        ", renderer.indentation)
+    }
+
+    fun testTopNoteUsesSameFiftyCharacterPreviewAsInlineNote() {
+        val vf = configureProjectFile("TopNotePreview.kt", "fun main() {\n    println(42)\n}\n")
+        val relPath = ProjectPathUtils.toProjectRelativePath(project, vf)!!
+        val document = myFixture.editor.document
+        val noteService = project.getService(NoteService::class.java)
+        val anchorService = project.getService(NoteAnchorService::class.java)
+        val markerService = project.getService(NoteMarkerService::class.java)
+        val presentation = project.getService(NoteEditorPresentation::class.java)
+        val note = Note(
+            relativePath = relPath,
+            line = 1,
+            content = "12345678901234567890123456789012345678901234567890abc",
+            anchor = anchorService.captureAnchor(DocumentTextProvider(document), 1),
+            placement = NotePlacement.TOP
+        )
+
+        noteService.saveNote(note)
+        markerService.createMarker(note.id, document, 1)
+        presentation.refreshEditor(myFixture.editor)
+
+        val renderer = topNoteInlays().single().renderer as TopNoteInlayRenderer
+        assertEquals("12345678901234567890123456789012345678901234567...", renderer.text)
     }
 
     fun testTopAndInlineNotesRenderTogether() {

@@ -12,6 +12,7 @@ import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import com.intellij.ui.JBColor
 import com.balaraking.marknote.i18n.NoteBundle
 import com.balaraking.marknote.message.NoteChangeListener
@@ -84,12 +85,15 @@ class NoteEditorPresentation(private val project: Project) : NoteChangeListener,
             highlighters.add(highlighter)
 
             if (note.placement == NotePlacement.TOP) {
+                val lineStartOffset = document.getLineStartOffset(note.line)
+                val indentation = leadingWhitespace(document, note.line)
+                val indentationWidth = calculateIndentationWidth(editor, lineStartOffset, indentation)
                 val blockInlay = editor.inlayModel.addBlockElement(
-                    document.getLineStartOffset(note.line),
+                    lineStartOffset,
                     false,
                     true,
                     0,
-                    TopNoteInlayRenderer(note.content)
+                    TopNoteInlayRenderer(formatShortPreview(note.content), indentation, indentationWidth)
                 )
                 if (blockInlay != null) blockInlays.add(blockInlay)
             } else {
@@ -120,9 +124,42 @@ class NoteEditorPresentation(private val project: Project) : NoteChangeListener,
     }
 
     companion object {
+        private const val SHORT_PREVIEW_LENGTH = 50
+        private const val ELLIPSIS = "..."
+
         fun formatShortPreview(content: String): String {
-            val singleLine = content.replace("\r\n", " ").replace("\n", " ").trim()
-            return if (singleLine.length > 50) singleLine.substring(0, 47) + "..." else singleLine
+            return truncatePreview(singleLine(content), SHORT_PREVIEW_LENGTH)
+        }
+
+        private fun singleLine(content: String): String {
+            return content.replace("\r\n", " ").replace("\n", " ").trim()
+        }
+
+        private fun truncatePreview(content: String, maxLength: Int): String {
+            return if (content.length > maxLength) {
+                content.substring(0, maxLength - ELLIPSIS.length) + ELLIPSIS
+            } else {
+                content
+            }
+        }
+
+        private fun leadingWhitespace(document: com.intellij.openapi.editor.Document, line: Int): String {
+            val start = document.getLineStartOffset(line)
+            val end = document.getLineEndOffset(line)
+            val lineText = document.getText(TextRange(start, end))
+            return lineText.takeWhile { it == ' ' || it == '\t' }
+        }
+
+        private fun calculateIndentationWidth(
+            editor: Editor,
+            lineStartOffset: Int,
+            indentation: String
+        ): Int {
+            if (indentation.isEmpty()) return 0
+            val indentEndOffset = lineStartOffset + indentation.length
+            val lineStartX = editor.logicalPositionToXY(editor.offsetToLogicalPosition(lineStartOffset)).x
+            val indentEndX = editor.logicalPositionToXY(editor.offsetToLogicalPosition(indentEndOffset)).x
+            return indentEndX - lineStartX
         }
     }
 }
@@ -149,13 +186,18 @@ class ShortPreviewInlayRenderer(internal val text: String) : EditorCustomElement
     }
 }
 
-class TopNoteInlayRenderer(internal val text: String) : EditorCustomElementRenderer {
+class TopNoteInlayRenderer(
+    internal val text: String,
+    internal val indentation: String,
+    private val indentationWidth: Int
+) : EditorCustomElementRenderer {
     private val lines = text.replace("\r\n", "\n").replace("\r", "\n").split('\n')
+    internal val markerIcon = NoteIcons.MARK_INLAY
 
     override fun calcWidthInPixels(inlay: Inlay<*>): Int {
         val font = inlay.editor.colorsScheme.getFont(EditorFontType.ITALIC)
         val metrics = inlay.editor.contentComponent.getFontMetrics(font)
-        return lines.maxOfOrNull(metrics::stringWidth) ?: 0
+        return indentationWidth + markerIcon.iconWidth + ICON_GAP + (lines.maxOfOrNull(metrics::stringWidth) ?: 0)
     }
 
     override fun calcHeightInPixels(inlay: Inlay<*>): Int = inlay.editor.lineHeight * lines.size
@@ -165,8 +207,16 @@ class TopNoteInlayRenderer(internal val text: String) : EditorCustomElementRende
         g.font = inlay.editor.colorsScheme.getFont(EditorFontType.ITALIC)
         val lineHeight = inlay.editor.lineHeight
         val baselineOffset = (lineHeight - g.fontMetrics.height) / 2 + g.fontMetrics.ascent
+        val markerX = targetRegion.x + indentationWidth
+        val iconY = targetRegion.y + (lineHeight - markerIcon.iconHeight) / 2
+        markerIcon.paintIcon(inlay.editor.contentComponent, g, markerX, iconY)
+        val textX = markerX + markerIcon.iconWidth + ICON_GAP
         lines.forEachIndexed { index, line ->
-            g.drawString(line, targetRegion.x, targetRegion.y + baselineOffset + index * lineHeight)
+            g.drawString(line, textX, targetRegion.y + baselineOffset + index * lineHeight)
         }
+    }
+
+    private companion object {
+        const val ICON_GAP = 4
     }
 }
