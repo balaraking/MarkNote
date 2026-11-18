@@ -3,11 +3,13 @@ package com.balaraking.marknote.persistence
 import com.intellij.openapi.components.State
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.xmlb.XmlSerializer
+import com.balaraking.marknote.model.NotePlacement
 import com.balaraking.marknote.model.LineAnchor
 import com.balaraking.marknote.model.Note
 import com.balaraking.marknote.model.NoteStatus
 import com.balaraking.marknote.service.NoteService
 import java.io.File
+import org.jdom.Element
 
 class NotePersistenceTest : BasePlatformTestCase() {
 
@@ -64,6 +66,44 @@ class NotePersistenceTest : BasePlatformTestCase() {
         assertEquals(anchor, restoredNotes[0].anchor)
     }
 
+    fun testTopPlacementRoundTripsThroughXml() {
+        val service = project.getService(NoteService::class.java)
+        service.loadState(NoteService.State())
+        service.saveNote(
+            Note(
+                id = "top-note",
+                relativePath = "src/App.kt",
+                line = 3,
+                content = "Read this first",
+                placement = NotePlacement.TOP
+            )
+        )
+
+        val xmlElement = XmlSerializer.serialize(service.getState())
+        val deserialized = XmlSerializer.deserialize(xmlElement, NoteService.State::class.java)
+
+        assertEquals(NotePlacement.TOP, deserialized.notes.single().placement)
+    }
+
+    fun testMissingPlacementLoadsAsInlineForLegacyXml() {
+        val service = project.getService(NoteService::class.java)
+        service.loadState(NoteService.State())
+        service.saveNote(
+            Note(
+                id = "legacy-note",
+                relativePath = "src/App.kt",
+                line = 3,
+                content = "Legacy note"
+            )
+        )
+
+        val xmlElement = XmlSerializer.serialize(service.getState())
+        removePlacementOptions(xmlElement)
+        val deserialized = XmlSerializer.deserialize(xmlElement, NoteService.State::class.java)
+
+        assertEquals(NotePlacement.INLINE, deserialized.notes.single().placement)
+    }
+
     fun testLegacyCodeReadingNoteXmlIsIgnoredAndNotModified() {
         val basePath = project.basePath ?: return
         val ideaDir = File(basePath, ".idea").apply { mkdirs() }
@@ -74,5 +114,10 @@ class NotePersistenceTest : BasePlatformTestCase() {
         val service = project.getService(NoteService::class.java)
         assertTrue(service.getNotes().none { it.content.contains("legacy") })
         assertEquals(legacyContent, legacyFile.readText())
+    }
+
+    private fun removePlacementOptions(element: Element) {
+        element.getChildren("option").removeIf { it.getAttributeValue("name") == "placement" }
+        element.getChildren().forEach(::removePlacementOptions)
     }
 }

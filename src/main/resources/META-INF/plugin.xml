@@ -34,6 +34,14 @@
                 class="com.balaraking.marknote.action.AddNoteAction"
                 text="action.MarkNote.AddNote.text"
                 description="action.MarkNote.AddNote.description">
+            <keyboard-shortcut first-keystroke="alt Y" keymap="$default"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+        <action id="MarkNote.AddCodeNoteTop"
+                class="com.balaraking.marknote.action.AddCodeNoteTopAction"
+                text="action.MarkNote.AddCodeNoteTop.text"
+                description="action.MarkNote.AddCodeNoteTop.description">
+            <keyboard-shortcut first-keystroke="alt T" keymap="$default"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
         </action>
         <action id="MarkNote.RebindNote"

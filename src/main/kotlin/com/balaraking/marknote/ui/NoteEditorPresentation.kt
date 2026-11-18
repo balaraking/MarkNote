@@ -15,6 +15,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.JBColor
 import com.balaraking.marknote.i18n.NoteBundle
 import com.balaraking.marknote.message.NoteChangeListener
+import com.balaraking.marknote.model.NotePlacement
 import com.balaraking.marknote.model.NoteStatus
 import com.balaraking.marknote.service.NoteService
 import com.balaraking.marknote.util.ProjectPathUtils
@@ -25,6 +26,7 @@ class NoteEditorPresentation(private val project: Project) : NoteChangeListener,
 
     private val editorHighlighters = mutableMapOf<Editor, MutableList<RangeHighlighter>>()
     private val editorInlays = mutableMapOf<Editor, MutableList<Inlay<*>>>()
+    private val editorBlockInlays = mutableMapOf<Editor, MutableList<Inlay<*>>>()
 
     init {
         project.messageBus.connect(this).subscribe(NoteChangeListener.TOPIC, this)
@@ -63,6 +65,7 @@ class NoteEditorPresentation(private val project: Project) : NoteChangeListener,
 
         val highlighters = mutableListOf<RangeHighlighter>()
         val inlays = mutableListOf<Inlay<*>>()
+        val blockInlays = mutableListOf<Inlay<*>>()
         val prefix = NoteBundle.message("prefix.inlay")
 
         for (note in notes) {
@@ -80,26 +83,39 @@ class NoteEditorPresentation(private val project: Project) : NoteChangeListener,
             highlighter.gutterIconRenderer = gutterRenderer
             highlighters.add(highlighter)
 
-            val shortPreview = formatShortPreview(note.content)
-            val inlay = editor.inlayModel.addAfterLineEndElement(
-                document.getLineEndOffset(note.line),
-                true,
-                ShortPreviewInlayRenderer("$prefix$shortPreview")
-            )
-            if (inlay != null) inlays.add(inlay)
+            if (note.placement == NotePlacement.TOP) {
+                val blockInlay = editor.inlayModel.addBlockElement(
+                    document.getLineStartOffset(note.line),
+                    false,
+                    true,
+                    0,
+                    TopNoteInlayRenderer(note.content)
+                )
+                if (blockInlay != null) blockInlays.add(blockInlay)
+            } else {
+                val shortPreview = formatShortPreview(note.content)
+                val inlay = editor.inlayModel.addAfterLineEndElement(
+                    document.getLineEndOffset(note.line),
+                    true,
+                    ShortPreviewInlayRenderer("$prefix$shortPreview")
+                )
+                if (inlay != null) inlays.add(inlay)
+            }
         }
 
         editorHighlighters[editor] = highlighters
         editorInlays[editor] = inlays
+        editorBlockInlays[editor] = blockInlays
     }
 
     fun clearEditor(editor: Editor) {
         editorHighlighters.remove(editor)?.forEach { if (it.isValid) it.dispose() }
         editorInlays.remove(editor)?.forEach { if (it.isValid) it.dispose() }
+        editorBlockInlays.remove(editor)?.forEach { if (it.isValid) it.dispose() }
     }
 
     override fun dispose() {
-        val editors = editorHighlighters.keys.toList() + editorInlays.keys.toList()
+        val editors = editorHighlighters.keys.toList() + editorInlays.keys.toList() + editorBlockInlays.keys.toList()
         editors.distinct().forEach { clearEditor(it) }
     }
 
@@ -130,5 +146,27 @@ class ShortPreviewInlayRenderer(internal val text: String) : EditorCustomElement
 
     private companion object {
         const val ICON_GAP = 4
+    }
+}
+
+class TopNoteInlayRenderer(internal val text: String) : EditorCustomElementRenderer {
+    private val lines = text.replace("\r\n", "\n").replace("\r", "\n").split('\n')
+
+    override fun calcWidthInPixels(inlay: Inlay<*>): Int {
+        val font = inlay.editor.colorsScheme.getFont(EditorFontType.ITALIC)
+        val metrics = inlay.editor.contentComponent.getFontMetrics(font)
+        return lines.maxOfOrNull(metrics::stringWidth) ?: 0
+    }
+
+    override fun calcHeightInPixels(inlay: Inlay<*>): Int = inlay.editor.lineHeight * lines.size
+
+    override fun paint(inlay: Inlay<*>, g: Graphics, targetRegion: Rectangle, textAttributes: TextAttributes) {
+        g.color = JBColor.GRAY
+        g.font = inlay.editor.colorsScheme.getFont(EditorFontType.ITALIC)
+        val lineHeight = inlay.editor.lineHeight
+        val baselineOffset = (lineHeight - g.fontMetrics.height) / 2 + g.fontMetrics.ascent
+        lines.forEachIndexed { index, line ->
+            g.drawString(line, targetRegion.x, targetRegion.y + baselineOffset + index * lineHeight)
+        }
     }
 }

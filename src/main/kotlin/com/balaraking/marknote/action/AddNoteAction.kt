@@ -5,15 +5,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
 import com.balaraking.marknote.i18n.NoteBundle
-import com.balaraking.marknote.model.Note
-import com.balaraking.marknote.service.DocumentTextProvider
-import com.balaraking.marknote.service.NoteAnchorService
-import com.balaraking.marknote.service.NoteMarkerService
-import com.balaraking.marknote.service.NoteService
+import com.balaraking.marknote.model.NotePlacement
 import com.balaraking.marknote.ui.NoteDialog
 import com.balaraking.marknote.util.ProjectPathUtils
 
-class AddNoteAction : AnAction() {
+open class BaseAddNoteAction(private val placement: NotePlacement) : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
@@ -30,25 +26,9 @@ class AddNoteAction : AnAction() {
             return
         }
 
-        val line = editor.caretModel.logicalPosition.line
         val dialog = NoteDialog(project, null)
         if (dialog.showAndGet()) {
-            val content = dialog.contentResult
-            val service = project.getService(NoteService::class.java)
-            val anchorService = project.getService(NoteAnchorService::class.java)
-            val markerService = project.getService(NoteMarkerService::class.java)
-
-            val provider = DocumentTextProvider(editor.document)
-            val anchor = anchorService.captureAnchor(provider, line)
-
-            val note = Note(
-                relativePath = relativePath,
-                line = line,
-                content = content,
-                anchor = anchor
-            )
-            service.saveNote(note)
-            markerService.createMarker(note.id, editor.document, line)
+            NoteCreationSupport.saveNote(project, editor, file, dialog.contentResult, placement)
         }
     }
 
@@ -60,3 +40,5 @@ class AddNoteAction : AnAction() {
             project != null && editor != null && file != null && ProjectPathUtils.toProjectRelativePath(project, file) != null
     }
 }
+
+class AddNoteAction : BaseAddNoteAction(NotePlacement.INLINE)

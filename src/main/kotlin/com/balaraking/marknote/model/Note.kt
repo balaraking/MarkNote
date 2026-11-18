@@ -6,6 +6,10 @@ enum class NoteStatus {
     ATTACHED, UNRESOLVED
 }
 
+enum class NotePlacement {
+    INLINE, TOP
+}
+
 data class LineAnchor(
     var lineText: String = "",
     var previousLines: List<String> = emptyList(),
@@ -26,7 +30,8 @@ data class Note(
     var line: Int = 0,
     var content: String = "",
     var anchor: LineAnchor = LineAnchor(),
-    var status: NoteStatus = NoteStatus.ATTACHED
+    var status: NoteStatus = NoteStatus.ATTACHED,
+    var placement: NotePlacement = NotePlacement.INLINE
 ) {
     fun deepCopy(): Note = Note(
         id = id,
@@ -34,6 +39,7 @@ data class Note(
         line = line,
         content = content,
         anchor = anchor.deepCopy(),
-        status = status
+        status = status,
+        placement = placement
     )
 }
